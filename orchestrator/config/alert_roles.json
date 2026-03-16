@@ -1,7 +1,22 @@
 {
-  "COMPRAS": [],
-  "RRHH": [],
-  "FLOTA": [],
-  "TECNICO": [],
-  "RESPONSABLE": []
+  "COMPRAS": {
+    "teamsUserIds": [],
+    "emails": []
+  },
+  "RRHH": {
+    "teamsUserIds": [],
+    "emails": []
+  },
+  "FLOTA": {
+    "teamsUserIds": [],
+    "emails": []
+  },
+  "TECNICO": {
+    "teamsUserIds": [],
+    "emails": []
+  },
+  "RESPONSABLE": {
+    "teamsUserIds": [],
+    "emails": []
+  }
 }

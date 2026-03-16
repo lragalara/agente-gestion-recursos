@@ -1,13 +1,14 @@
 """
-Enrutador de alertas BC -> destinatarios Teams.
+Enrutador de alertas BC -> destinatarios Teams y correo.
 
 La codeunit 50102 de BC genera 12 tipos de alerta. Cada tipo va a un rol
-distinto dentro de la empresa. Este modulo resuelve que Teams user_ids
-deben recibir cada alerta.
+distinto dentro de la empresa. Este modulo resuelve:
+  - Teams user_ids para el bot
+  - emails para Power Automate
 
-Fuentes de configuracion del rol -> Teams user_id:
+Fuentes de configuracion:
   1. Fichero del proyecto: orchestrator/config/alert_roles.json
-  2. Variables de entorno ALERT_ROLE_* como override o fallback
+  2. Variables de entorno ALERT_ROLE_* y ALERT_ROLE_*_EMAILS como override o fallback
 """
 
 import json
@@ -40,6 +41,14 @@ _ROLE_ENV: dict[str, str] = {
     "RESPONSABLE": "ALERT_ROLE_RESPONSABLE",
 }
 
+_ROLE_EMAIL_ENV: dict[str, str] = {
+    "COMPRAS": "ALERT_ROLE_COMPRAS_EMAILS",
+    "RRHH": "ALERT_ROLE_RRHH_EMAILS",
+    "FLOTA": "ALERT_ROLE_FLOTA_EMAILS",
+    "TECNICO": "ALERT_ROLE_TECNICO_EMAILS",
+    "RESPONSABLE": "ALERT_ROLE_RESPONSABLE_EMAILS",
+}
+
 _CONFIG_PATH = Path(__file__).with_name("config") / "alert_roles.json"
 
 ALERT_ICON: dict[str, str] = {
@@ -68,19 +77,51 @@ ALERT_LABEL: dict[str, str] = {
 }
 
 
-def _load_role_config() -> dict[str, list[str]]:
-    """Carga la tabla rol -> user_ids desde el proyecto y el entorno."""
-    configured: dict[str, list[str]] = {}
+def _split_csv(raw_value: str) -> list[str]:
+    return [item.strip() for item in raw_value.split(",") if item.strip()]
+
+
+def _append_unique(values: list[str], new_values: list[str]) -> list[str]:
+    merged = values.copy()
+    for value in new_values:
+        if value not in merged:
+            merged.append(value)
+    return merged
+
+
+def _normalize_role_entry(value: object) -> dict[str, list[str]]:
+    """
+    Soporta dos formatos de config:
+      "ROL": ["teams-user-id-1", "teams-user-id-2"]
+      "ROL": {"teamsUserIds": [...], "emails": [...]}
+    """
+    if isinstance(value, list):
+        return {"teamsUserIds": [str(item).strip() for item in value if str(item).strip()], "emails": []}
+
+    if isinstance(value, dict):
+        teams_user_ids = value.get("teamsUserIds", [])
+        emails = value.get("emails", [])
+        return {
+            "teamsUserIds": [
+                str(item).strip() for item in teams_user_ids if str(item).strip()
+            ] if isinstance(teams_user_ids, list) else [],
+            "emails": [
+                str(item).strip() for item in emails if str(item).strip()
+            ] if isinstance(emails, list) else [],
+        }
+
+    return {"teamsUserIds": [], "emails": []}
+
+
+def _load_role_config() -> dict[str, dict[str, list[str]]]:
+    """Carga la tabla rol -> teams user ids y emails desde el proyecto y el entorno."""
+    configured: dict[str, dict[str, list[str]]] = {}
 
     if _CONFIG_PATH.exists():
         try:
             raw = json.loads(_CONFIG_PATH.read_text(encoding="utf-8"))
-            for role, values in raw.items():
-                if not isinstance(values, list):
-                    continue
-                configured[role.strip().upper()] = [
-                    str(value).strip() for value in values if str(value).strip()
-                ]
+            for role, value in raw.items():
+                configured[role.strip().upper()] = _normalize_role_entry(value)
         except Exception as exc:
             logger.warning("No se pudo cargar %s: %s", _CONFIG_PATH, exc)
 
@@ -88,37 +129,62 @@ def _load_role_config() -> dict[str, list[str]]:
         env_value = os.getenv(env_key, "").strip()
         if not env_value:
             continue
-        merged = configured.get(role, []).copy()
-        for user_id in [item.strip() for item in env_value.split(",") if item.strip()]:
-            if user_id not in merged:
-                merged.append(user_id)
-        configured[role] = merged
+        entry = configured.get(role, {"teamsUserIds": [], "emails": []})
+        entry["teamsUserIds"] = _append_unique(entry["teamsUserIds"], _split_csv(env_value))
+        configured[role] = entry
+
+    for role, env_key in _ROLE_EMAIL_ENV.items():
+        env_value = os.getenv(env_key, "").strip()
+        if not env_value:
+            continue
+        entry = configured.get(role, {"teamsUserIds": [], "emails": []})
+        entry["emails"] = _append_unique(entry["emails"], _split_csv(env_value))
+        configured[role] = entry
 
     return configured
 
 
-def get_routing_context(alert_type: str, direct_target: str = "") -> dict:
-    """Resuelve roles, destinatarios y trazabilidad de una alerta."""
+def get_routing_context(
+    alert_type: str,
+    direct_target: str = "",
+    direct_target_email: str = "",
+) -> dict:
+    """Resuelve roles, destinatarios Teams, emails y trazabilidad de una alerta."""
     recipients: list[str] = []
+    recipient_emails: list[str] = []
+
     if direct_target:
         recipients.append(direct_target)
+    if direct_target_email:
+        recipient_emails.append(direct_target_email)
 
     normalized = alert_type.upper().replace(" ", "_")
     roles = ALERT_ROLE_MAP.get(normalized, ["RESPONSABLE"])
     role_config = _load_role_config()
     role_targets: dict[str, list[str]] = {}
+    role_emails: dict[str, list[str]] = {}
 
     configured = 0
     for role in roles:
-        targets = role_config.get(role, [])
-        if targets:
-            role_targets[role] = targets
-        for user_id in targets:
+        entry = role_config.get(role, {"teamsUserIds": [], "emails": []})
+        team_targets = entry.get("teamsUserIds", [])
+        email_targets = entry.get("emails", [])
+
+        if team_targets:
+            role_targets[role] = team_targets
+        if email_targets:
+            role_emails[role] = email_targets
+
+        for user_id in team_targets:
             if user_id not in recipients:
                 recipients.append(user_id)
                 configured += 1
 
-    if configured == 0 and not direct_target:
+        for email in email_targets:
+            if email not in recipient_emails:
+                recipient_emails.append(email)
+
+    if configured == 0 and not direct_target and not direct_target_email:
         logger.warning(
             "Alerta '%s': ningun destinatario configurado. "
             "Completa orchestrator/config/alert_roles.json o define ALERT_ROLE_*.",
@@ -129,8 +195,11 @@ def get_routing_context(alert_type: str, direct_target: str = "") -> dict:
         "alert_type_normalized": normalized,
         "roles": roles,
         "role_targets": role_targets,
+        "role_emails": role_emails,
         "recipients": recipients,
+        "recipient_emails": recipient_emails,
         "direct_target": direct_target,
+        "direct_target_email": direct_target_email,
     }
 
 

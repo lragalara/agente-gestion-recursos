@@ -30,11 +30,14 @@ Y luego consulta `alert_roles.json`:
 
 ```json
 {
-  "COMPRAS": ["11111111-1111-1111-1111-111111111111"],
-  "RRHH": ["22222222-2222-2222-2222-222222222222"],
-  "FLOTA": ["33333333-3333-3333-3333-333333333333"],
-  "TECNICO": ["44444444-4444-4444-4444-444444444444"],
-  "RESPONSABLE": ["55555555-5555-5555-5555-555555555555"]
+  "COMPRAS": {
+    "teamsUserIds": ["11111111-1111-1111-1111-111111111111"],
+    "emails": ["compras@empresa.com"]
+  },
+  "RRHH": {
+    "teamsUserIds": ["22222222-2222-2222-2222-222222222222"],
+    "emails": ["rrhh@empresa.com"]
+  }
 }
 ```
 
@@ -49,6 +52,7 @@ BC envía:
   "criticality": "critical",
   "details": "La ITV del vehículo Ford Transit ha vencido el 2026-03-10.",
   "target_user_id": "66666666-6666-6666-6666-666666666666",
+  "target_user_email": "juan@empresa.com",
   "company_id": "CRONUS"
 }
 ```
@@ -60,7 +64,7 @@ Python hace esto:
 3. `target_user_id` -> Juan
 4. Destinatarios finales -> `Sergio + Juan`
 5. El bot intenta mandarles Teams
-6. Power Automate recibe el contexto completo para el correo
+6. Power Automate recibe el contexto completo para el correo, incluyendo los emails ya resueltos
 
 ## Qué pasa sin persistencia
 

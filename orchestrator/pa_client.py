@@ -113,8 +113,10 @@ class PAClient:
         company_id: str,
         teams_message: str,
         recipients: list[str] | None = None,
+        recipient_emails: list[str] | None = None,
         roles: list[str] | None = None,
         role_targets: dict[str, list[str]] | None = None,
+        role_emails: dict[str, list[str]] | None = None,
     ) -> None:
         """
         Notifica a PA de una alerta proactiva de BC Job Queue.
@@ -127,8 +129,10 @@ class PAClient:
         label = ALERT_LABEL.get(alert_type.upper(), alert_type)
         timestamp = datetime.now(timezone.utc).isoformat()
         recipients = recipients or []
+        recipient_emails = recipient_emails or []
         roles = roles or []
         role_targets = role_targets or {}
+        role_emails = role_emails or {}
 
         payload = {
             "notificationType": "alert",
@@ -141,8 +145,10 @@ class PAClient:
             "timestamp": timestamp,
             "teamsMessage": teams_message,
             "recipients": recipients,
+            "recipientEmails": recipient_emails,
             "roles": roles,
             "roleTargets": role_targets,
+            "roleEmails": role_emails,
             "emailSubject": f"[BC Alertas] {label} - {resource_no} ({company_id})",
             "emailBody": (
                 f"Se ha generado una alerta en Business Central.\n\n"
@@ -153,6 +159,7 @@ class PAClient:
                 f"Fecha: {timestamp}\n"
                 f"Roles: {', '.join(roles) or '-'}\n"
                 f"Destinatarios Teams: {', '.join(recipients) or '-'}\n\n"
+                f"Destinatarios email: {', '.join(recipient_emails) or '-'}\n\n"
                 f"Detalle:\n{details}"
             ),
         }

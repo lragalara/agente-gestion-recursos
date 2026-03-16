@@ -109,6 +109,7 @@ class AlertRequest(BaseModel):
     criticality: str
     details: str
     target_user_id: str = ""
+    target_user_email: str = ""
     company_id: str = ""
 
 
@@ -137,7 +138,11 @@ async def webhook_alerts(alert: AlertRequest) -> dict:
         alert.criticality,
     )
 
-    routing = get_routing_context(alert.alert_type, alert.target_user_id)
+    routing = get_routing_context(
+        alert.alert_type,
+        alert.target_user_id,
+        alert.target_user_email,
+    )
     recipients = routing["recipients"]
 
     if not recipients:
@@ -177,8 +182,10 @@ async def webhook_alerts(alert: AlertRequest) -> dict:
         company_id=alert.company_id,
         teams_message=message,
         recipients=recipients,
+        recipient_emails=routing["recipient_emails"],
         roles=routing["roles"],
         role_targets=routing["role_targets"],
+        role_emails=routing["role_emails"],
     )
 
     return {
