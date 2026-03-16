@@ -126,20 +126,22 @@ agente-gestion-recursos/
 ├── .env                        — Variables reales (gitignored)
 ├── README.md
 ├── DEPLOY_AZURE.md             — Guía de despliegue en Azure
+├── POWER_AUTOMATE.md           — Guía de creación de los 2 flows de PA
 ├── orchestrator/               — Servicio principal (puerto 8000)
 │   ├── main.py                 — Endpoints FastAPI
 │   ├── agent.py                — Núcleo LangChain + function calling
-│   ├── bc_client.py            — Cliente OData BC (mock y live)
+│   ├── bc_client.py            — Cliente OData BC (lecturas + create + release + post)
+│   ├── pa_client.py            — Cliente PA: notificaciones Teams/correo post-operación
 │   ├── bot_adapter.py          — Integración Bot Framework
 │   ├── tenant_resolver.py      — Resolución de empresa por usuario
 │   ├── prompts/
 │   │   └── system_prompt.py    — Prompt del sistema
 │   └── tools/                  — 12 tools del agente
-│       ├── resources.py        — Consulta recursos y empleados
-│       ├── assignments.py      — Entregas, devoluciones, transferencias
-│       ├── licenses.py         — Stock de licencias
-│       ├── vehicles.py         — Flota de vehículos
-│       └── maintenance.py      — Mantenimiento
+│       ├── resources.py        — Consulta recursos y empleados (OData)
+│       ├── assignments.py      — Entregas, devoluciones, transferencias (OData + notif. PA)
+│       ├── licenses.py         — Stock de licencias (OData)
+│       ├── vehicles.py         — Flota de vehículos (OData)
+│       └── maintenance.py      — Mantenimiento (OData)
 └── mock_bc/                    — Servidor BC simulado (puerto 8001)
     ├── main.py                 — OData v4 en memoria con estado mutable
     └── data/
@@ -160,6 +162,11 @@ agente-gestion-recursos/
 | `AZURE_OPENAI_ENDPOINT` | Endpoint de Azure OpenAI | vacío |
 | `BOT_APP_ID` | App ID del bot en Entra ID | vacío (modo dev) |
 | `MOCK_BC_URL` | URL del mock server | `http://mock_bc:8001` |
+| `PA_NOTIFY_FLOW_URL_OPERATIONS` | URL del flow PA para operaciones | vacío (opcional) |
+| `PA_NOTIFY_FLOW_URL_ALERTS` | URL del flow PA para alertas | vacío (opcional) |
+| `PA_NOTIFY_FLOW_URL` | Fallback legado si aún no separas los flows | vacío (opcional) |
+
+> **Nota sobre Power Automate:** Todas las operaciones BC (create, release, post) van por OData directo via `bc_client.py`. PA se usa únicamente para notificaciones post-operación. Es opcional: si no se configura, las operaciones funcionan igual pero sin avisos en canal de Teams ni correo. Ver [POWER_AUTOMATE.md](POWER_AUTOMATE.md).
 
 ---
 
@@ -180,3 +187,55 @@ BC_COMPANY_ID=NOMBRE_EMPRESA_REAL
 4. Verifica conectividad: `curl http://localhost:8000/companies`
 
 Ver [DEPLOY_AZURE.md](DEPLOY_AZURE.md) para el despliegue completo en Azure.
+
+---
+
+## Routing de alertas
+
+El sistema separa dos conceptos:
+
+1. Quién debería recibir la alerta
+2. Si el bot puede escribirle por Teams ahora mismo
+
+La primera parte se resuelve con el mapping `alert_type -> rol -> Teams user_id`,
+definido en `orchestrator/config/alert_roles.json`.
+
+Ejemplo:
+
+- `ITV_EXPIRED` -> rol `FLOTA`
+- `FLOTA` -> Sergio
+- si BC además manda `target_user_id` del conductor Juan, los destinatarios finales son `Sergio + Juan`
+
+Plantilla de ejemplo:
+
+```json
+{
+  "COMPRAS": ["11111111-1111-1111-1111-111111111111"],
+  "RRHH": ["22222222-2222-2222-2222-222222222222"],
+  "FLOTA": ["33333333-3333-3333-3333-333333333333"],
+  "TECNICO": ["44444444-4444-4444-4444-444444444444"],
+  "RESPONSABLE": ["55555555-5555-5555-5555-555555555555"]
+}
+```
+
+Flujo resumido:
+
+1. BC envía la alerta a `/webhook/alerts`
+2. Python resuelve destinatarios por rol y por `target_user_id`
+3. El bot intenta avisar por Teams
+4. Power Automate recibe el contexto para el correo
+
+Importante:
+
+- Sin persistencia, el bot solo puede enviar proactivos mientras la instancia actual conserve en memoria la `ConversationReference`
+- El canal fiable para alertas, en ese escenario, es el correo vía Power Automate
+- El bot sigue necesitando saber quién corresponde a cada rol, y para eso existe `alert_roles.json`
+
+### Flows de Power Automate
+
+La configuración recomendada es usar 2 URLs separadas:
+
+- `PA_NOTIFY_FLOW_URL_OPERATIONS` para operaciones `Delivery`, `Return` y `Transfer`
+- `PA_NOTIFY_FLOW_URL_ALERTS` para alertas proactivas
+
+El backend mantiene `PA_NOTIFY_FLOW_URL` como fallback legado, pero ya puedes irte directamente a construir dos flows distintos en Power Automate.

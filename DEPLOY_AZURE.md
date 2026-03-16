@@ -137,7 +137,8 @@ az containerapp update \
     BOT_APP_PASSWORD=secretref:bot-password \
     BC_GATEWAY_URL=https://tu-gateway/ODataV4 \
     BC_ODATA_USER=tu_usuario \
-    BC_ODATA_PASSWORD=secretref:bc-password
+    BC_ODATA_PASSWORD=secretref:bc-password \
+    PA_NOTIFY_FLOW_URL=secretref:pa-notify-url
 ```
 
 > **Nota:** Para los secretos usa `secretref:nombre-secreto` y configúralos con:
@@ -145,8 +146,13 @@ az containerapp update \
 > az containerapp secret set \
 >   --name $APP_NAME \
 >   --resource-group $RG \
->   --secrets openai-key=valor_real bot-password=valor_real bc-password=valor_real
+>   --secrets \
+>     openai-key=valor_real \
+>     bot-password=valor_real \
+>     bc-password=valor_real \
+>     pa-notify-url=url_completa_del_flow_notificaciones
 > ```
+> La URL de Power Automate contiene una firma SAS en los query params. Trátarla como un secreto.
 
 ---
 

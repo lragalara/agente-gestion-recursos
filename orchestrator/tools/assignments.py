@@ -1,4 +1,10 @@
-"""Tools de asignaciones: entregas, devoluciones, transferencias e historial."""
+"""
+Tools de asignaciones: entregas, devoluciones, transferencias e historial.
+
+Todas las operaciones BC (create, release, post) van por OData directo (bc_client).
+Al finalizar cada operación de escritura exitosa, se envía una notificación
+a Power Automate (pa_client) para que dispare el mensaje en Teams y el correo.
+"""
 
 import json
 import logging
@@ -9,8 +15,23 @@ from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
     from bc_client import BCClient
+    from pa_client import PAClient
 
 logger = logging.getLogger(__name__)
+
+
+async def _get_employee_email(bc: "BCClient", employee_no: str) -> str:
+    """
+    Obtiene el email del empleado desde BC para incluirlo en el albarán de PA.
+    Silencia errores: si BC no devuelve el email, PA simplemente no envía el correo
+    al empleado (el canal Teams sigue funcionando con normalidad).
+    """
+    try:
+        employee = await bc.get_employee(employee_no)
+        return employee.get("email", "")
+    except Exception as exc:
+        logger.warning("No se pudo obtener email de empleado '%s': %s", employee_no, exc)
+        return ""
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -84,23 +105,29 @@ def make_get_employee_assets(bc: "BCClient") -> StructuredTool:
     )
 
 
-def make_create_delivery(bc: "BCClient") -> StructuredTool:
+def make_create_delivery(bc: "BCClient", pa: "PAClient") -> StructuredTool:
     """
+    Crea un documento Delivery y lo procesa completo vía OData:
+      1. create_assignment_header  — bc_client (OData)
+      2. release_document          — bc_client (OData)
+      3. post_document             — bc_client (OData)
+      4. notify_operation          — pa_client (Power Automate, fire-and-forget)
+
     REQUIERE CONFIRMACIÓN del usuario antes de ejecutar.
-    Crea un documento Delivery (asignación de recurso a empleado).
     """
 
     async def _run(employee_no: str, lines: list[dict]) -> str:
         try:
-            # Crear y contabilizar en un solo flujo
             parsed_lines = [
                 {
                     "resourceNo": line.get("resource_no", ""),
-                    "item_no": line.get("item_no", ""),
+                    "itemNo": line.get("item_no", ""),
                     "quantity": line.get("quantity", 1),
                 }
                 for line in lines
             ]
+
+            # 1-3. Ciclo completo en BC vía OData directo
             header = await bc.create_assignment_header(
                 document_type="Delivery",
                 employee_no=employee_no,
@@ -109,6 +136,19 @@ def make_create_delivery(bc: "BCClient") -> StructuredTool:
             doc_no = header["documentNo"]
             await bc.release_document(doc_no)
             result = await bc.post_document(doc_no)
+
+            # 4. Notificar a PA (canal Teams + albarán al empleado) — no bloqueante
+            resource_nos = [l.get("resource_no") or l.get("item_no", "") for l in lines]
+            employee_email = await _get_employee_email(bc, employee_no)
+            await pa.notify_operation(
+                operation_type="Delivery",
+                document_no=result["documentNo"],
+                employee_no=employee_no,
+                employee_email=employee_email,
+                resource_nos=resource_nos,
+                company_id=bc.company_id,
+            )
+
             return (
                 f"Entrega contabilizada correctamente.\n"
                 f"Documento: {result['documentNo']}\n"
@@ -122,17 +162,17 @@ def make_create_delivery(bc: "BCClient") -> StructuredTool:
         name="create_delivery",
         description=(
             "Crea una entrega (asignación de recurso a empleado). "
-            "IMPORTANTE: Esta acción modifica datos. El agente DEBE pedir confirmación "
+            "IMPORTANTE: Esta acción modifica datos en BC. El agente DEBE pedir confirmación "
             "al usuario antes de ejecutarla."
         ),
         args_schema=CreateDeliveryInput,
     )
 
 
-def make_create_return(bc: "BCClient") -> StructuredTool:
+def make_create_return(bc: "BCClient", pa: "PAClient") -> StructuredTool:
     """
+    Crea un documento Return y lo procesa completo vía OData.
     REQUIERE CONFIRMACIÓN del usuario antes de ejecutar.
-    Crea un documento Return (devolución de recurso).
     """
 
     async def _run(employee_no: str, lines: list[dict]) -> str:
@@ -145,6 +185,8 @@ def make_create_return(bc: "BCClient") -> StructuredTool:
                 }
                 for line in lines
             ]
+
+            # 1-3. Ciclo completo en BC vía OData directo
             header = await bc.create_assignment_header(
                 document_type="Return",
                 employee_no=employee_no,
@@ -153,6 +195,19 @@ def make_create_return(bc: "BCClient") -> StructuredTool:
             doc_no = header["documentNo"]
             await bc.release_document(doc_no)
             result = await bc.post_document(doc_no)
+
+            # 4. Notificar a PA (canal Teams + confirmación al empleado) — no bloqueante
+            resource_nos = [l.get("resource_no", "") for l in lines]
+            employee_email = await _get_employee_email(bc, employee_no)
+            await pa.notify_operation(
+                operation_type="Return",
+                document_no=result["documentNo"],
+                employee_no=employee_no,
+                employee_email=employee_email,
+                resource_nos=resource_nos,
+                company_id=bc.company_id,
+            )
+
             return (
                 f"Devolución contabilizada correctamente.\n"
                 f"Documento: {result['documentNo']}\n"
@@ -166,17 +221,17 @@ def make_create_return(bc: "BCClient") -> StructuredTool:
         name="create_return",
         description=(
             "Registra la devolución de un recurso por parte de un empleado. "
-            "IMPORTANTE: Esta acción modifica datos. El agente DEBE pedir confirmación "
+            "IMPORTANTE: Esta acción modifica datos en BC. El agente DEBE pedir confirmación "
             "al usuario antes de ejecutarla."
         ),
         args_schema=CreateReturnInput,
     )
 
 
-def make_create_transfer(bc: "BCClient") -> StructuredTool:
+def make_create_transfer(bc: "BCClient", pa: "PAClient") -> StructuredTool:
     """
+    Crea un documento Transfer y lo procesa completo vía OData.
     REQUIERE CONFIRMACIÓN del usuario antes de ejecutar.
-    Crea un documento Transfer (transferencia entre empleados).
     """
 
     async def _run(
@@ -186,6 +241,8 @@ def make_create_transfer(bc: "BCClient") -> StructuredTool:
     ) -> str:
         try:
             parsed_lines = [{"resourceNo": line.get("resource_no", "")} for line in lines]
+
+            # 1-3. Ciclo completo en BC vía OData directo
             header = await bc.create_assignment_header(
                 document_type="Transfer",
                 employee_no=from_employee_no,
@@ -196,6 +253,20 @@ def make_create_transfer(bc: "BCClient") -> StructuredTool:
             doc_no = header["documentNo"]
             await bc.release_document(doc_no)
             result = await bc.post_document(doc_no)
+
+            # 4. Notificar a PA (canal Teams + confirmación a ambos empleados) — no bloqueante
+            resource_nos = [l.get("resource_no", "") for l in lines]
+            # En Transfer notificamos al destinatario (quien recibe el recurso)
+            employee_email = await _get_employee_email(bc, to_employee_no)
+            await pa.notify_operation(
+                operation_type="Transfer",
+                document_no=result["documentNo"],
+                employee_no=f"{from_employee_no} → {to_employee_no}",
+                employee_email=employee_email,
+                resource_nos=resource_nos,
+                company_id=bc.company_id,
+            )
+
             return (
                 f"Transferencia contabilizada correctamente.\n"
                 f"Documento: {result['documentNo']}\n"
@@ -209,7 +280,7 @@ def make_create_transfer(bc: "BCClient") -> StructuredTool:
         name="create_transfer",
         description=(
             "Transfiere un recurso de un empleado a otro. "
-            "IMPORTANTE: Esta acción modifica datos. El agente DEBE pedir confirmación "
+            "IMPORTANTE: Esta acción modifica datos en BC. El agente DEBE pedir confirmación "
             "al usuario antes de ejecutarla."
         ),
         args_schema=CreateTransferInput,

@@ -14,6 +14,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableConfig
 
 from bc_client import BCClient
+from pa_client import PAClient
 from prompts.system_prompt import SYSTEM_PROMPT
 from tenant_resolver import TenantResolver
 from tools import get_all_tools
@@ -62,6 +63,7 @@ class Agent:
 
         self._sessions: dict[str, Session] = {}
         self._tenant_resolver = TenantResolver()
+        self._pa_client = PAClient()
         self._llm: Any | None = None
 
         self._init_llm()
@@ -221,8 +223,8 @@ class Agent:
         # Instanciar BCClient para esta empresa
         bc = BCClient(company_id)
 
-        # Obtener tools
-        tools = get_all_tools(bc)
+        # Obtener tools (bc para todas las operaciones BC, pa para notificaciones post-operación)
+        tools = get_all_tools(bc, self._pa_client)
 
         # Construir el agente con LangChain
         try:
