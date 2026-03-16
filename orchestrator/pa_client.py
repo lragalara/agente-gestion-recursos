@@ -15,6 +15,7 @@ Configuracion:
   PA_NOTIFY_FLOW_URL_OPERATIONS -> flow de operaciones
   PA_NOTIFY_FLOW_URL_ALERTS     -> flow de alertas
   PA_NOTIFY_FLOW_URL            -> fallback legado si aun no se han separado
+  PA_TEST_EMAIL_OVERRIDE        -> si existe, redirige todos los correos a ese email
 
 Modos:
   mock -> registra en logs, sin llamar a PA
@@ -41,12 +42,15 @@ class PAClient:
         legacy_url = os.getenv("PA_NOTIFY_FLOW_URL", "")
         self._operations_url = os.getenv("PA_NOTIFY_FLOW_URL_OPERATIONS", "") or legacy_url
         self._alerts_url = os.getenv("PA_NOTIFY_FLOW_URL_ALERTS", "") or legacy_url
+        self._test_email_override = os.getenv("PA_TEST_EMAIL_OVERRIDE", "").strip()
 
         if self._mode == "live":
             if not self._operations_url:
                 logger.info("PA flow de operaciones no configurado. Notificaciones de operaciones omitidas.")
             if not self._alerts_url:
                 logger.info("PA flow de alertas no configurado. Notificaciones de alertas omitidas.")
+            if self._test_email_override:
+                logger.info("PA_TEST_EMAIL_OVERRIDE activo. Todos los correos se redirigiran a %s", self._test_email_override)
 
     async def notify_operation(
         self,
@@ -70,7 +74,8 @@ class PAClient:
             "operationLabel": label,
             "documentNo": document_no,
             "employeeNo": employee_no,
-            "employeeEmail": employee_email,
+            "employeeEmail": self._test_email_override or employee_email,
+            "originalEmployeeEmail": employee_email,
             "resourceNos": resources_str,
             "companyId": company_id,
             "triggeredBy": triggered_by,
@@ -133,6 +138,9 @@ class PAClient:
         roles = roles or []
         role_targets = role_targets or {}
         role_emails = role_emails or {}
+        effective_recipient_emails = (
+            [self._test_email_override] if self._test_email_override else recipient_emails
+        )
 
         payload = {
             "notificationType": "alert",
@@ -145,7 +153,8 @@ class PAClient:
             "timestamp": timestamp,
             "teamsMessage": teams_message,
             "recipients": recipients,
-            "recipientEmails": recipient_emails,
+            "recipientEmails": effective_recipient_emails,
+            "originalRecipientEmails": recipient_emails,
             "roles": roles,
             "roleTargets": role_targets,
             "roleEmails": role_emails,
@@ -159,7 +168,7 @@ class PAClient:
                 f"Fecha: {timestamp}\n"
                 f"Roles: {', '.join(roles) or '-'}\n"
                 f"Destinatarios Teams: {', '.join(recipients) or '-'}\n\n"
-                f"Destinatarios email: {', '.join(recipient_emails) or '-'}\n\n"
+                f"Destinatarios email: {', '.join(effective_recipient_emails) or '-'}\n\n"
                 f"Detalle:\n{details}"
             ),
         }

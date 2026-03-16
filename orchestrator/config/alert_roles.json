@@ -1,22 +1,32 @@
 {
   "COMPRAS": {
     "teamsUserIds": [],
-    "emails": []
+    "emails": [
+      "lraga@grupobertolin.es"
+    ]
   },
   "RRHH": {
     "teamsUserIds": [],
-    "emails": []
+    "emails": [
+      "lraga@grupobertolin.es"
+    ]
   },
   "FLOTA": {
     "teamsUserIds": [],
-    "emails": []
+    "emails": [
+      "lraga@grupobertolin.es"
+    ]
   },
   "TECNICO": {
     "teamsUserIds": [],
-    "emails": []
+    "emails": [
+      "lraga@grupobertolin.es"
+    ]
   },
   "RESPONSABLE": {
     "teamsUserIds": [],
-    "emails": []
+    "emails": [
+      "lraga@grupobertolin.es"
+    ]
   }
 }

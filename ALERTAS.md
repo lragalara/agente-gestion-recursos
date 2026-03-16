@@ -85,3 +85,20 @@ Por eso, en el estado actual:
 1. `orchestrator/config/alert_roles.json` con los Object IDs reales
 2. Opcionalmente `ALERT_ROLE_*` en el entorno si quieres override
 3. Si quieres proactivos por bot, cada usuario debe abrir chat con el bot al menos una vez
+
+## Fase 1 de pruebas
+
+Para pruebas funcionales iniciales se puede usar un unico correo de validacion.
+En esta fase el proyecto queda preparado para redirigir todos los correos a:
+
+- `lraga@grupobertolin.es`
+
+Hay dos mecanismos activos:
+
+1. `orchestrator/config/alert_roles.json` tiene ese correo en todos los roles
+2. `PA_TEST_EMAIL_OVERRIDE` permite que tanto operaciones como alertas se redirijan a ese correo
+
+Con esto:
+
+- las alertas por correo llegan siempre al mismo buzón de pruebas
+- las operaciones tambien pueden validarse sin depender del email real del empleado
