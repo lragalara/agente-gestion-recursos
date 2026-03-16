@@ -1,0 +1,16 @@
+[
+  {
+    "entryNo": 1,
+    "entryType": "Assigned",
+    "lineType": "Resource",
+    "resourceNo": "REC-10001",
+    "employeeNo": "E2EMP001",
+    "employeeName": "Carlos Fernández",
+    "documentNo": "DEL-E2-00001",
+    "postingDate": "2024-03-10",
+    "quantity": 1,
+    "isActive": true,
+    "serialNo": "LNV-2023-001",
+    "shortcutDimension1": "IT"
+  }
+]

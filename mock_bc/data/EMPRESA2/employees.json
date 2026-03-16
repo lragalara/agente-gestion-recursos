@@ -1,0 +1,35 @@
+[
+  {
+    "no": "E2EMP001",
+    "displayName": "Carlos Fernández",
+    "firstName": "Carlos",
+    "lastName": "Fernández",
+    "email": "carlos.fernandez@empresa2.com",
+    "department": "IT",
+    "jobTitle": "Director IT",
+    "status": "Active",
+    "resourceNo": "REC-PER-E2001"
+  },
+  {
+    "no": "E2EMP002",
+    "displayName": "Laura Sánchez",
+    "firstName": "Laura",
+    "lastName": "Sánchez",
+    "email": "laura.sanchez@empresa2.com",
+    "department": "DISEÑO",
+    "jobTitle": "Diseñadora Gráfica",
+    "status": "Active",
+    "resourceNo": "REC-PER-E2002"
+  },
+  {
+    "no": "E2EMP003",
+    "displayName": "Roberto Torres",
+    "firstName": "Roberto",
+    "lastName": "Torres",
+    "email": "roberto.torres@empresa2.com",
+    "department": "LOGÍSTICA",
+    "jobTitle": "Responsable Logística",
+    "status": "Active",
+    "resourceNo": "REC-PER-E2003"
+  }
+]

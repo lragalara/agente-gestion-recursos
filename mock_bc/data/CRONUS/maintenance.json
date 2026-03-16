@@ -1,0 +1,26 @@
+[
+  {
+    "entryNo": 1,
+    "resourceNo": "REC-00090",
+    "maintenanceTypeCode": "REVISION",
+    "description": "Revisión anual",
+    "frequency": "Annual",
+    "lastMaintenanceDate": "2024-01-10",
+    "nextMaintenanceDate": "2026-04-11",
+    "alertDaysBefore": 30,
+    "isMandatory": false,
+    "responsibleUserCode": "ADMIN"
+  },
+  {
+    "entryNo": 2,
+    "resourceNo": "REC-00045",
+    "maintenanceTypeCode": "REVISION",
+    "description": "Revisión trimestral grúa",
+    "frequency": "Quarterly",
+    "lastMaintenanceDate": "2024-09-01",
+    "nextMaintenanceDate": "2026-03-12",
+    "alertDaysBefore": 15,
+    "isMandatory": true,
+    "responsibleUserCode": "ADMIN"
+  }
+]

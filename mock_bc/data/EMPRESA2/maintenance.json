@@ -1,0 +1,14 @@
+[
+  {
+    "entryNo": 1,
+    "resourceNo": "REC-10002",
+    "maintenanceTypeCode": "REVISION",
+    "description": "Revisión semestral furgoneta",
+    "frequency": "Semiannual",
+    "lastMaintenanceDate": "2025-06-01",
+    "nextMaintenanceDate": "2026-06-01",
+    "alertDaysBefore": 30,
+    "isMandatory": false,
+    "responsibleUserCode": "ADMIN2"
+  }
+]

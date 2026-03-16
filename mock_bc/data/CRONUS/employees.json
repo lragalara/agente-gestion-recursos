@@ -1,0 +1,46 @@
+[
+  {
+    "no": "EMP001",
+    "displayName": "María López",
+    "firstName": "María",
+    "lastName": "López",
+    "email": "maria.lopez@empresa.com",
+    "department": "RRHH",
+    "jobTitle": "Responsable RRHH",
+    "status": "Active",
+    "resourceNo": "REC-PER-001"
+  },
+  {
+    "no": "EMP002",
+    "displayName": "Pedro Martínez",
+    "firstName": "Pedro",
+    "lastName": "Martínez",
+    "email": "pedro.martinez@empresa.com",
+    "department": "OBRA",
+    "jobTitle": "Jefe de Obra Toledo",
+    "status": "Active",
+    "resourceNo": "REC-PER-002"
+  },
+  {
+    "no": "EMP003",
+    "displayName": "Ana Ruiz",
+    "firstName": "Ana",
+    "lastName": "Ruiz",
+    "email": "ana.ruiz@empresa.com",
+    "department": "COMPRAS",
+    "jobTitle": "Responsable Compras",
+    "status": "Active",
+    "resourceNo": "REC-PER-003"
+  },
+  {
+    "no": "EMP004",
+    "displayName": "Juan García",
+    "firstName": "Juan",
+    "lastName": "García",
+    "email": "juan.garcia@empresa.com",
+    "department": "OBRA",
+    "jobTitle": "Jefe de Obra Sevilla",
+    "status": "Active",
+    "resourceNo": "REC-PER-004"
+  }
+]

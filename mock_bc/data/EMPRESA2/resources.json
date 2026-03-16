@@ -1,0 +1,46 @@
+[
+  {
+    "no": "REC-10001",
+    "name": "Portátil Lenovo ThinkPad",
+    "resourceStatus": "Assigned",
+    "assetCategory": "Computing",
+    "resourceGroup": "EQUIPOS INFORMÁTICOS",
+    "serialNo": "LNV-2023-001",
+    "entityType": "Fixed Asset",
+    "entityNo": "AF-10001",
+    "currentEmployeeNo": "E2EMP001",
+    "currentEmployeeName": "Carlos Fernández",
+    "assignmentDate": "2024-03-10",
+    "isLicense": false
+  },
+  {
+    "no": "REC-10002",
+    "name": "Furgoneta Citroën Jumper",
+    "resourceStatus": "Available",
+    "assetCategory": "Vehicle",
+    "resourceGroup": "VEHÍCULOS",
+    "serialNo": "",
+    "entityType": "Fixed Asset",
+    "entityNo": "AF-10002",
+    "insuranceNo": "INS-10002",
+    "currentEmployeeNo": "",
+    "currentEmployeeName": "",
+    "assignmentDate": "",
+    "isLicense": false
+  },
+  {
+    "no": "REC-10003",
+    "name": "Adobe Creative Cloud",
+    "resourceStatus": "Available",
+    "assetCategory": "License",
+    "resourceGroup": "LICENCIAS",
+    "serialNo": "",
+    "entityType": "Item",
+    "entityNo": "LIC-ADOBE",
+    "currentEmployeeNo": "",
+    "currentEmployeeName": "",
+    "assignmentDate": "",
+    "isLicense": true,
+    "licenseExpiryDate": "2026-06-30"
+  }
+]

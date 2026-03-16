@@ -1,0 +1,29 @@
+[
+  {
+    "no": "INS-10002",
+    "resourceNo": "REC-10002",
+    "vehicleInsurance": true,
+    "ownershipType": "Own",
+    "licensePlate": "9012-GHI",
+    "brand": "Citroën",
+    "model": "Jumper",
+    "vin": "VF7YAAAHBKJ10002",
+    "vehicleType": "Furgoneta",
+    "fuelType": "Diesel",
+    "year": 2023,
+    "color": "Blanco",
+    "itvExpiryDate": "2026-09-15",
+    "itvAlertDays": 30,
+    "itvLastDate": "2024-09-15",
+    "itvResult": "Favorable",
+    "insuranceExpiryDate": "2026-12-31",
+    "insuranceAlertDays": 45,
+    "insuranceType": "Comprehensive",
+    "nextServiceDate": "2026-06-01",
+    "serviceAlertDays": 30,
+    "lastServiceDate": "2025-06-01",
+    "lastServiceKm": 20000,
+    "currentKm": 31000,
+    "serviceIntervalKm": 15000
+  }
+]

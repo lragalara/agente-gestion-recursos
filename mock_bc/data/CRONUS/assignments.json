@@ -1,0 +1,30 @@
+[
+  {
+    "entryNo": 1,
+    "entryType": "Assigned",
+    "lineType": "Resource",
+    "resourceNo": "REC-00002",
+    "employeeNo": "EMP001",
+    "employeeName": "María López",
+    "documentNo": "DEL-00001",
+    "postingDate": "2024-01-15",
+    "quantity": 1,
+    "isActive": true,
+    "serialNo": "XYZ789",
+    "shortcutDimension1": "RRHH"
+  },
+  {
+    "entryNo": 2,
+    "entryType": "Assigned",
+    "lineType": "Resource",
+    "resourceNo": "REC-00091",
+    "employeeNo": "EMP002",
+    "employeeName": "Pedro Martínez",
+    "documentNo": "DEL-00002",
+    "postingDate": "2024-02-01",
+    "quantity": 1,
+    "isActive": true,
+    "serialNo": "",
+    "shortcutDimension1": "OBRA-TOLEDO"
+  }
+]
